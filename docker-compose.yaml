@@ -1,0 +1,66 @@
+services:
+
+  umami:
+    image: docker.umami.is/umami-software/umami:${UMAMI_VERSION:-postgresql-latest}
+    env_file: environment.d/umami.env
+    environment:
+      DATABASE_TYPE: ${DATABASE_TYPE:-postgresql}
+      DATABASE_URL: ${DATABASE_TYPE:-postgresql}://${DATABASE_USER:-umami}:${DATABASE_PASSWORD}@${DATABASE_HOST:-database}:${DATABASE_PORT:-5432}/${DATABASE_NAME:-umami}
+      APP_SECRET: ${APP_SECRET}
+    ports:
+      - ${UMAMI_PORT:-3000}:3000
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: "curl http://localhost:3000/api/heartbeat"
+    labels:
+      com.centurylinklabs.watchtower.scope: ${COMPOSE_PROJECT_NAME}
+    depends_on: [database]
+    restart: unless-stopped
+  
+  database:
+    image: postgres:${POSTGRES_VERSION:-latest}
+    env_file: environment.d/database.env
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-umami}
+      POSTGRES_USER: ${DATABASE_USER:-umami}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - ${DATABASE_VOLUME:-database-data}:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    healthcheck:
+      test: pg_isready -d ${DATABASE_NAME:-umami} -U ${DATABASE_USER:-umami}
+    labels:
+      com.centurylinklabs.watchtower.scope: ${COMPOSE_PROJECT_NAME}
+    restart: unless-stopped
+
+  database-backups:
+    image: prodrigestivill/postgres-backup-local:${POSTGRES_BACKUP_VERSION:-latest}
+    env_file: environment.d/database-backups.env
+    environment:
+      POSTGRES_HOST: ${DATABASE_HOST:-datbase}
+      POSTGRES_DB: ${DATABASE_NAME:-umami}
+      POSTGRES_USER: ${DATABASE_USER:-umami}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_EXTRA_OPTS: '--clean --if-exists'
+      BACKUP_DIR: /backups
+    volumes:
+      - ${DATABASE_BACKUPS_PATH:-./volumes/backups}:/backups
+      - /etc/localtime:/etc/localtime:ro
+    depends_on: [database]
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower:${WATCHTOWER_VERSION:-latest}
+    env_file: environment.d/watchtower.env
+    environment:
+      WATCHTOWER_SCOPE: ${COMPOSE_PROJECT_NAME}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      com.centurylinklabs.watchtower.scope: ${COMPOSE_PROJECT_NAME}
+    restart: unless-stopped
+
+volumes:
+  database-data: {}
