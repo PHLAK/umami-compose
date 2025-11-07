@@ -1,7 +1,7 @@
 services:
 
   umami:
-    image: docker.umami.is/umami-software/umami:${UMAMI_VERSION:-postgresql-latest}
+    image: ghcr.io/umami-software/umami:${UMAMI_VERSION:-3}
     env_file: environment.d/umami.env
     environment:
       DATABASE_TYPE: ${DATABASE_TYPE:-postgresql}
@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
   
   database:
-    image: postgres:${POSTGRES_VERSION:-latest}
+    image: postgres:${POSTGRES_VERSION:-17}
     env_file: environment.d/database.env
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-umami}
