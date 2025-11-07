@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
 
   database-backups:
-    image: prodrigestivill/postgres-backup-local:${POSTGRES_BACKUP_VERSION:-latest}
+    image: prodrigestivill/postgres-backup-local:${POSTGRES_BACKUP_VERSION:-${POSTGRES_VERSION:-17}}
     env_file: environment.d/database-backups.env
     environment:
       POSTGRES_HOST: ${DATABASE_HOST:-database}
